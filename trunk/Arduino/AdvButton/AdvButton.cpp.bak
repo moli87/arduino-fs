@@ -185,7 +185,16 @@ void AdvButton::setPin(uint8_t pin)
 
 void AdvButton::resetState()
 {
-	this->lastState=3;
+	if (cur == LOW)
+	{
+		if (func_keyDown != NULL)
+			func_keyDown(this);
+		if (func_keyPress != NULL)
+			func_keyPress(this);	
+	}else{
+		if (func_keyUp != NULL)
+			func_keyUp(this);	
+	}
 }
 
  char* AdvButton::getName()
@@ -195,18 +204,18 @@ void AdvButton::resetState()
 
 int AdvButton::getBytes()
 {
-	return this->buttonVar;
+	return *this->buttonVar;
 }
 
 
 void AdvButton::setBit()
 {
-	this->buttonVar |= 1 << this->bitNum;
+	*this->buttonVar |= 1 << this->bitNum;
 }
 
 void AdvButton::clearBit()
 {
-	this->buttonVar &= ~(1 << this->bitNum);
+	*this->buttonVar &= ~(1 << this->bitNum);
 }
 
 

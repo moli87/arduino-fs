@@ -9,10 +9,7 @@ if dev == 0 then
     ipc.display("Could not open device port")
     ipc.exit()
 end
-
-
-flaps_inc = ipc.readSW(0x3bfa)
-ipc.log("Flaps inc = ".. flaps_inc)
+red_string = ""
 
 
 -- index from 1
@@ -28,7 +25,8 @@ table.insert(commands, {0x07ec, 0x07ec, "vshold", ipc.writeUD, ipc.readUD, 1, 0}
 table.insert(commands, {0x0800, 0x0800, "approachhold", ipc.writeUD, ipc.readUD, 1, 0})
 table.insert(commands, {0x07dc, 0x07dc, "speedhold", ipc.writeUD, ipc.readUD, 1, 0})
 table.insert(commands, {0x0810, 0x0810, "throttle", ipc.writeUD, ipc.readUD, 1, 0})
-table.insert(commands, {0x0892, 0x0892, "magneto", ipc.writeUD, ipc.readUD, -1, -1})
+table.insert(commands, {0x0892, 0x0892, "magneto", ipc.writeUW, ipc.readUW, -1, -1})
+
 table.insert(commands, {0x281c, 0x281c, "battery", ipc.writeUW, ipc.readUW, 1, 0})
 table.insert(commands, {0x2e80, 0x2e80, "avionics", ipc.writeUW, ipc.readUW, 1, 0})
 table.insert(commands, {0x3101, 0x3101, "alternator", ipc.writeUB, ipc.readUB, 1, 0})
@@ -40,10 +38,11 @@ table.insert(commands, {0x029c, 0x029c, "pitot", ipc.writeUB, ipc.readUB, 1, 0})
 table.insert(commands, {66079, 66080, "gear", ipc.control, ipc.readUD, 0, 0})
 
 function do_action (name, action)
+    second = 0
     for i,v in ipairs(commands) do
         if string.match (name,v[3]) then
             ipc.log(v[2])
-            if string.match (action, "on") then
+            if string.match (action, "on") or second == 1 then
                 v[4](v[1],v[6])
                 states [v[1]] =v[6]
             elseif string.match (action, "off") then
@@ -58,9 +57,10 @@ function do_action (name, action)
                 end
             else
                 v[4](v[1], tonumber (action))
+                second=1
                 states [v[1]] = tonumber (action)
             end
-            break
+
         end
     end
 end
@@ -76,11 +76,38 @@ function call_offset (offset, value)
     end
 end
 
+function string:split( inSplitPattern, outResults )
+  if not outResults then
+    outResults = { }
+  end
+  local theStart = 1
+  local theSplitStart, theSplitEnd = string.find( self, inSplitPattern, 
+theStart )
+  while theSplitStart do
+    table.insert( outResults, string.sub( self, theStart, theSplitStart-1 ) )
+    theStart = theSplitEnd + 1
+    theSplitStart, theSplitEnd = string.find( self, inSplitPattern, theStart )
+  end
+  table.insert( outResults, string.sub( self, theStart ) )
+  return outResults
+end
 
 
 function handlecom(handle, str)
+    red_string =red_string..str
     ipc.log("com=" .. str)
-    command_name, command_value = string.match (str, "(%a+):(.*)")
+    while(com.test(dev)>0) do
+        news, num=com.read (dev, 10000,10)
+        ipc.log(".. " .. news)
+	red_string =red_string .. news
+    end
+    if not string.match(red_string, ".*\n") then
+	return
+    end
+    data=string.split(red_string, "\n")
+    for i,c in ipairs(data) do
+       ipc.log("command=" .. c)
+    command_name, command_value = string.match (c, "(%a+):(.*)")
     if command_name then
         do_action (command_name, command_value)
 
@@ -91,6 +118,7 @@ function handlecom(handle, str)
 	        inited=0
             end
 	end
+    
     end	
     if string.match(str, "nav1s:(%d+)") then
     	state = "0x"..string.match(str, "nav1s:(%d+)")
@@ -183,6 +211,10 @@ if string.match(str, "ruddertrim:(-?%d+)") then
         ipc.writeUB (0x3123, state)
     end	
 end
+red_string = string.match (red_string, ".*\n(.*)")
+
+end
+
 
 -- ----------------------------- Callbacks -------------------
 
@@ -272,11 +304,11 @@ function call_radio (offset, value)
 end
 
 
-event.com(dev, 20, 5, '\n', "handlecom")
+event.com(dev, 10000, 8, "handlecom")
 com.write(dev,"resend:1\n")
 
 ipc.sleep(10000)
-com.write(dev,"resend:1\n")
+
 event.offset(0x0BC8, "UW", "call_offset") -- parking brake
 event.offset(0x0d0c, "UW", "call_offset") -- lights 
 event.offset(0x0Be8, "UD", "call_offset") -- gear
@@ -304,3 +336,4 @@ event.offset (0x3120, "UW", "call_radio") -- nav two standby
 event.offset (0x07cc, "UW", "call_heading") -- autopilot heading
 event.offset (0x07d4, "UD", "call_altitude") -- autopilot altitude
 event.offset (0x07f2, "SW", "call_vertical") -- autopilot vertical speed
+

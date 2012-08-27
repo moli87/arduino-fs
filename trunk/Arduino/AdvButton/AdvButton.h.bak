@@ -50,7 +50,7 @@ public:
 	startDelay : amount of time between the initial keypress event and when to start repeating (optional)
 	mode       : type of button, analog or digital
 	*/
-	AdvButton(uint8_t pin,char* name, void (*OnKeyPress)(AdvButton*) , unsigned long repeat = 300, unsigned long startDelay = 500, buttonMode mode = btn_Digital, int threshold=200, int* var=NULL, int bit=0);
+	AdvButton(uint8_t pin,char* name, void (*OnKeyPress)(AdvButton*) , unsigned long repeat = 300, unsigned long startDelay = 500, buttonMode mode = btn_Digital, int lthreshold=200, int uthreshold = 400, int* var=NULL, int bit=0);
 
 	/*
 	This is the second constructor call, use it for other types of buttons
@@ -61,7 +61,7 @@ public:
 	mode       : type of button, analog or digital
 	*/
 
-	AdvButton(uint8_t pin, char* name, void (*OnKeyPress)(AdvButton*) =NULL, void (*OnKeyDown)(AdvButton*)=NULL,void (*OnKeyUp)(AdvButton*)=NULL, buttonMode mode = btn_Digital, int threshold=200, int* var=NULL, int bit=0);
+	AdvButton(uint8_t pin, char* name, void (*OnKeyPress)(AdvButton*) =NULL, void (*OnKeyDown)(AdvButton*)=NULL,void (*OnKeyUp)(AdvButton*)=NULL, buttonMode mode = btn_Digital, int lthreshold=200, int uthreshold = 400, int* var=NULL, int bit=0);
 
 	/* 
 	Checks the state of the button and triggers events accordingly
@@ -93,7 +93,7 @@ public:
 	void resetState();
 	void setBit();
 	void clearBit();
-	char* getName();
+	 char* getName();
 	int getBytes();
 
 
@@ -121,7 +121,9 @@ private:
 	int debounceTime;
 	int* buttonVar;
 	int bitNum;
-	int analogThreshold;
+	int lanalogThreshold;
+	int uanalogThreshold;
+	 char* name;
     	unsigned long repeat;
 	unsigned long startDelay;
 	unsigned long startPress;

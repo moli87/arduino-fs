@@ -185,7 +185,24 @@ void AdvButton::setPin(uint8_t pin)
 
 void AdvButton::resetState()
 {
-	this->lastState=3;
+	int cur;
+	int r;
+	if (mode == btn_Digital)
+		cur = digitalRead(pin);
+	else if (mode == btn_Analog){
+		r = analogRead (pin);
+		cur = r >=lanalogThreshold && r <uanalogThreshold? LOW : HIGH;
+	}
+	if (cur == LOW)
+	{
+		if (func_keyDown != NULL)
+			func_keyDown(this);
+		if (func_keyPress != NULL)
+			func_keyPress(this);	
+	}else{
+		if (func_keyUp != NULL)
+			func_keyUp(this);	
+	}
 }
 
  char* AdvButton::getName()
