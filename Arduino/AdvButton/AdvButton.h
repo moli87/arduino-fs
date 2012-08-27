@@ -128,6 +128,7 @@ private:
 	unsigned long startDelay;
 	unsigned long startPress;
 	unsigned long lastChange;
+	int force;
         int lastState;
         unsigned long prevPres;
 };
